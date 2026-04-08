@@ -54,10 +54,25 @@ low battery alerts. This is all being made without the use of external libraries
 | A1 | Servo shunt current sense |
 | A2 | Battery voltage divider |
 
-## Build & Flashing (_How to Use_)
+## Build & Flashing (_How to Start_)
 
 1. Wire the circuit just as you see in the schematic.
    (_currently the implemation of the standalone chip is a bit finicky, so for true functionality we
      reccommend using just the Arduino Uno, if you are uisng that disregard anything related to the standalone chip_)
 2. Burn the Arduino Bootloader to the ATmega328p using Arduino Uno as an ISP (_if using Arduino Uno and not ATmega328p as a    standalone chip don't do this step_)
 3. Upload the .iso file onto your Arduino Uno/ATmega328p standalone chip
+
+## User Experience (_How to Use_)
+| Action | Input |
+|---|---|
+|Wake from Sleep|Press any key (_preferably 0_)|
+|Enter PIN|Press Number Keys|
+|Delete previous digit|Press *|
+|Confirm PIN|Press #|
+|Lock (_when unlocked_)|Press #|
+|Change PIN|Enter master key #2804 -> Press # -> enter new PIN -> Press #|
+
+### Demo
+Apologies for the poor quality on the demo video.
+
+[Watch the demo](https://youtu.be/hFr4GKMdfvQ)
