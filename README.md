@@ -54,6 +54,70 @@ low battery alerts. This is all being made without the use of external libraries
 | A1 | Servo shunt current sense |
 | A2 | Battery voltage divider |
 
+## System Architecture
+
+### Keypad Resistor Ladder
+
+To avoid the idea of it being expensive and inefficient for these keypads to have a set of wires 
+for each button, all 4 rows connect to a single analog pin (A0) through a resistor ladder. Each 
+row produces a unique voltage and by comparing the measured analog values against the threshold 
+for each row, we can determine which row the pressed key belongs to. The combination of the 
+active column and the row voltage identifies the specific key that was pressed.
+
+| Row | Target Voltage | Resistor | ADC Threshold |
+|---|---|---|---|
+| R1 | 4.5V | 1.1kΩ | ~922 |
+| R2 | 3.5V | 4.3kΩ | ~715 |
+| R3 | 2.5V | 10kΩ | ~512 |
+| R4 | 1.5V | 22kΩ | ~320 |
+
+<br>
+
+### Battery Life
+
+The system is powered by a 9V battery regulated to 5V via the MCP1702. Since the regulator 
+maintains a constant 5V, the microcontroller can't directly measure battery health from VCC. 
+A voltage divider (100kΩ + 47kΩ) on A2 scales the battery voltage down to a safe ADC range. 
+The low battery threshold is set at 7V, giving an early warning before the regulator drops out 
+around 6V. When below that threshold a yellow LED flashes three times.
+
+| Mode | Current Draw | Battery Life (550 mAh) |
+|---|---|---|
+| Active | ~4.32 mA | — |
+| Sleep | ~0.18 mA | ~127 days |
+| Combined (2 wake-ups/day) | ~4.36 mAh/day | ~126 days |
+
+### Servo PWM (Timer1)
+
+For our servo implementation we have 4 functions: servoAttach, servoDetach, servoWrite, and 
+servoRead. These are made with zero external libraries as that was one of our constraints. Servo 
+control is done through hardware Timer1 in fast PWM mode on pin 10 due to its 16 bit superior 
+resolution. Below are the formulas and values used:
+
+```c
+TOP  (ICR1)  = (f_clk / f_PWM / N) - 1 = (16MHz / 50Hz / 8) - 1 = 39999
+OCR1B (0°)   = 3000  →  1.5ms pulse (neutral)
+OCR1B (90°)  = 4000  →  2.0ms pulse (unlocked)
+OCR1B (-90°) = 2000  →  1.0ms pulse (locked)
+```
+
+<br>
+
+### Passkey Security
+
+"Hashing with Salt" uses a salt (a random, unpredictable value) and encrypts it by putting the 
+passkey and salt into a hashing algorithm. The salt is generated using the built-in rand() 
+function seeded with millis(). As for our hashing algorithm, we use a XOR checksum which uses 
+the bitwise XOR operator for each byte of the inputted key. With just the hash and salt values 
+saved to EEPROM, it's extremely difficult to figure out the passkey especially without knowing 
+the algorithm used.
+
+1. User sets a PIN
+2. A random salt is generated via `rand()` seeded with `millis()`
+3. Salt + PIN are run through an XOR checksum hashing algorithm
+4. Only the **hash** and **salt** are written to EEPROM — the PIN itself is never stored
+5. On unlock attempt, the input is hashed with the stored salt and compared to the saved hash
+
 ## Build & Flashing (_How to Start_)
 
 1. Wire the circuit just as you see in the schematic.
